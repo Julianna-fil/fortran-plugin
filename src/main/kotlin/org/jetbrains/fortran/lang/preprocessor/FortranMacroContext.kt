@@ -8,6 +8,7 @@ interface FortranMacrosContext {
     fun define(macro: FortranMacro)
     fun undefine(name: String)
     fun isDefined(name: String?): Boolean
+    fun getVal(name: String) : FortranMacro?
     fun enterIf(decision: Boolean)
     fun exitIf()
     fun enterElse()
@@ -38,6 +39,10 @@ class FortranMacrosContextImpl : FortranMacrosContext {
     }
 
     override fun isDefined(name: String?) = name != null && macros.contains(name)
+
+    override fun getVal(name: String): FortranMacro? {
+        return macros[name]
+    }
 
     override fun enterIf(decision: Boolean) {
         nestedConditions.push(Condition(decision))

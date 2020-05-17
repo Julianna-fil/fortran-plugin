@@ -19,7 +19,7 @@ import org.jetbrains.fortran.lang.psi.FortranTokenType
 import org.jetbrains.fortran.lang.resolveIncludedFile
 
 class FortranIncludeProcessingLexer(val file: FortranFile?, val project: Project) :
-        LookAheadLexer(FortranPreprocessingLexer()) {
+        LookAheadLexer(FortranPreprocessingLexer(project)) {
     override fun lookAhead(baseLexer: Lexer) {
         val baseToken = baseLexer.tokenType
         if (baseToken == FortranTokenType.INCLUDE_KEYWORD) {

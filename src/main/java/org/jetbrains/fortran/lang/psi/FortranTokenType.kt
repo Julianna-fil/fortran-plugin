@@ -72,7 +72,7 @@ object FortranTokenSets {
             FortranTypes.DEFINE_DIRECTIVE, FortranTypes.UNDEFINE_DIRECTIVE,
             FortranTypes.IF_DIRECTIVE, FortranTypes.IF_DEFINED_DIRECTIVE,
             FortranTypes.IF_NOT_DEFINED_DIRECTIVE, FortranTypes.ELSE_DIRECTIVE,
-            FortranTypes.ELIF_DIRECTIVE, FortranTypes.ENDIF_DIRECTIVE,
+            FortranTypes.ELIF_DIRECTIVE, FortranTypes.ENDIF_DIRECTIVE, FortranTypes.INCLUDE_DIRECTIVE,
             FortranTypes.UNKNOWN_DIRECTIVE
     )
 

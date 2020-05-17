@@ -1294,7 +1294,7 @@ decode_stmt ::= label_decl? decode_ '(' expr ',' parameter_value ',' designator 
 type_stmt ::= label_decl? type_ parameter_value (','? <<list output_item>>?) { pin = 4; extends=action_stmt }
 
 //preprocessor directives, called directly from java code
-macro ::= define_macro | undefine_macro | ifdef_macro | ifndef_macro | if_macro | else_macro | elif_macro | endif_macro | unknown_macro
+macro ::= define_macro | undefine_macro | ifdef_macro | ifndef_macro | if_macro | else_macro | elif_macro | endif_macro | include_macro | unknown_macro
 define_macro ::= define_directive directive_content? {
     pin=1
 }
@@ -1317,6 +1317,9 @@ elif_macro ::= elif_directive directive_content? {
     pin=1
 }
 endif_macro ::= endif_directive directive_content? {
+    pin=1
+}
+include_macro ::= include_directive directive_content? {
     pin=1
 }
 unknown_macro ::= unknown_directive directive_content? {

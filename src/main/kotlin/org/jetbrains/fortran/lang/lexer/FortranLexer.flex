@@ -136,6 +136,7 @@ CPPCOMMENT="#"\040*"if"\040*0({EOL}[^\r\n]*)*{EOL}"#"\040*"endif"{EOL}
     {HASH} {WHITE_SPACE_CHAR}* "elif" { pushState(DIRECTIVE); return ELIF_DIRECTIVE; }
     {HASH} {WHITE_SPACE_CHAR}* "else" { pushState(DIRECTIVE); return ELSE_DIRECTIVE; }
     {HASH} {WHITE_SPACE_CHAR}* "endif" { pushState(DIRECTIVE); return ENDIF_DIRECTIVE; }
+    {HASH} {WHITE_SPACE_CHAR}* "include" { pushState(DIRECTIVE); return INCLUDE_DIRECTIVE; }
     {HASH} {WHITE_SPACE_CHAR}* {IDENTIFIER} { pushState(DIRECTIVE); return UNKNOWN_DIRECTIVE; }
 }
 

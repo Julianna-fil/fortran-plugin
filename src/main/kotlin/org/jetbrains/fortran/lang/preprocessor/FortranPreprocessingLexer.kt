@@ -5,14 +5,21 @@ import com.intellij.lexer.LexerPosition
 import com.intellij.lexer.LexerUtil
 import com.intellij.lexer.LookAheadLexer
 import com.intellij.openapi.progress.ProgressManager
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.text.StringUtil
 import com.intellij.psi.tree.TokenSet
+import com.intellij.vcsUtil.VcsUtil.getVirtualFile
 import org.jetbrains.fortran.lang.FortranTypes.*
+import org.jetbrains.fortran.lang.lexer.FortranIncludeProcessingLexer
 import org.jetbrains.fortran.lang.lexer.FortranLexer
+import org.jetbrains.fortran.lang.psi.FortranFile
 import org.jetbrains.fortran.lang.psi.FortranTokenSets
 import org.jetbrains.fortran.lang.psi.FortranTokenType
+import org.jetbrains.fortran.lang.resolveIncludedFile
+import org.jetbrains.fortran.util.Parser
+import java.io.File
 
-class FortranPreprocessingLexer : LookAheadLexer(FortranLexer(false)) {
+class FortranPreprocessingLexer(val project: Project) : LookAheadLexer(FortranLexer(false)) {
     private val macrosContext: FortranMacrosContext = FortranMacrosContextImpl()
 
     private val ifDefinedDecisionEvaluator = { content: CharSequence ->
@@ -21,7 +28,48 @@ class FortranPreprocessingLexer : LookAheadLexer(FortranLexer(false)) {
         macrosContext.isDefined(identifier)
     }
     private val ifNotDefinedDecisionEvaluator = { name: CharSequence -> !ifDefinedDecisionEvaluator(name) }
-    private val ifDecisionEvaluator = { directive_content: CharSequence -> !directive_content.endsWith("/* macro_eval: false */") }
+    private val ifDecisionEvaluator = { directive_content: CharSequence ->
+        val words = StringUtil.getWordsIn(directive_content.toString())
+        if (words.isEmpty()) false
+        else {
+            val macro_str = words[0].toString()
+            val identifier = macro_str.toIntOrNull()
+            if (identifier == null) {
+                if (macrosContext.isDefined(macro_str)) {
+                    val var_macro = macrosContext.getVal(macro_str)?.value
+                    val var_macro_val = evaluateMarco(var_macro)
+                    if (var_macro_val== null) {
+                        false
+                    }
+                    else {
+                        if (words.count() > 1) {
+                            val value = words[1].toString().toDoubleOrNull()
+                            if (value == null) false
+                            else {
+                                var_macro_val.equals(value)
+                            }
+                        } else {
+                            var_macro_val.equals(0.0)
+                        }
+                    }
+                } else false
+            }
+            else {
+                identifier != 0
+            }
+        }
+        //!directive_content.endsWith("/* macro_eval: false */")
+    }
+
+    private fun evaluateMarco(value: String?) : Double? {
+        var result = 0.0
+        try {
+            result = Parser().evaluate(value.toString())
+        } catch (ex:Exception) {
+            return null
+        }
+        return result
+    }
 
     override fun lookAhead(baseLexer: Lexer) {
         val CONDITION_DIRECTIVES = TokenSet.create(
@@ -34,6 +82,7 @@ class FortranPreprocessingLexer : LookAheadLexer(FortranLexer(false)) {
         )
 
         when (val baseToken = baseLexer.tokenType) {
+            INCLUDE_DIRECTIVE -> processIncludeDirective(baseLexer)
             DEFINE_DIRECTIVE -> processDefineDirective(baseLexer)
             UNDEFINE_DIRECTIVE -> processUndefineDirective(baseLexer)
             IF_DEFINED_DIRECTIVE -> processIfDirective(baseLexer, ifDefinedDecisionEvaluator)
@@ -78,6 +127,34 @@ class FortranPreprocessingLexer : LookAheadLexer(FortranLexer(false)) {
             advanceLexer(baseLexer)
             if (def != null) {
                 macrosContext.define(def)
+            }
+        }
+    }
+
+    private fun processIncludeDirective(baseLexer: Lexer) {
+        ProgressManager.checkCanceled()
+        advanceLexer(baseLexer)
+
+        val tokenType = baseLexer.tokenType
+        if (tokenType == DIRECTIVE_CONTENT) {
+            val path = LexerUtil.getTokenText(baseLexer).toString().trim('"', '\'', ' ')
+
+            advanceLexer(baseLexer)
+            try {
+                val stream = File(project.basePath + "\\" + path).inputStream()
+                val bytes = stream.readBytes()
+                stream.close()
+                val charset = Charsets.UTF_8
+                val inc_data = bytes.toString(charset)
+
+                val lexer = FortranLexer(false)
+                lexer.start(inc_data)
+                while (lexer.tokenType != null) {
+                    lookAhead(lexer)
+                    lexer.advance()
+                }
+            } catch (ex:Exception) {
+                //do nothing
             }
         }
     }
